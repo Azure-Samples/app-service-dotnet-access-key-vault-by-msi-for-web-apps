@@ -1,10 +1,10 @@
 ---
-services: App
-platforms: .Net
+services: App-Service
+platforms: dotnet
 author: jianghaolu
 ---
 
-# Getting Started with App - Manage Web App Cosmos Db By Msi - in .Net #
+# Getting started on safeguarding Web app secrets in Key Vault using convenience API #
 
           Azure App Service basic sample for managing web apps.
            - Create a Cosmos DB with credentials stored in a Key Vault
@@ -18,7 +18,7 @@ author: jianghaolu
 
 To run this sample:
 
-Set the environment variable `AZURE_AUTH_LOCATION` with the full path for an auth file. See [how to create an auth file](https://github.com/Azure/azure-sdk-for-net/blob/Fluent/AUTH.md).
+Set the environment variable `AZURE_AUTH_LOCATION` with the full path for an auth file. See [how to create an auth file](https://github.com/Azure/azure-libraries-for-java/blob/master/AUTH.md).
 
     git clone https://github.com/Azure-Samples/app-service-dotnet-access-key-vault-by-msi-for-web-apps.git
 
