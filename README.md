@@ -10,9 +10,10 @@ extensions:
 description: "Azure App Service basic sample for managing web apps."
 ---
 
-# Getting started on safeguarding Web app secrets in Key Vault using convenience API
+# Safeguarding web app secrets in Key Vault using convenience API
 
  Azure App Service basic sample for managing web apps.
+ 
   - Create a Cosmos DB with credentials stored in a Key Vault
   - Create a web app which interacts with the Cosmos DB by first
       reading the secrets from the Key Vault.
