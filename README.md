@@ -10,7 +10,7 @@ extensions:
 description: "Azure App Service basic sample for managing web apps."
 ---
 
-# Getting started on safeguarding Web app secrets in Key Vault using convenience API #
+# Getting started on safeguarding Web app secrets in Key Vault using convenience API
 
  Azure App Service basic sample for managing web apps.
   - Create a Cosmos DB with credentials stored in a Key Vault
@@ -19,7 +19,7 @@ description: "Azure App Service basic sample for managing web apps."
       The source code of the web app is located at Asset/documentdb-dotnet-todo-app
 
 
-## Running this Sample ##
+## Running this Sample
 
 To run this sample:
 
@@ -33,7 +33,7 @@ Set the environment variable `AZURE_AUTH_LOCATION` with the full path for an aut
 
     bin\Debug\net452\ManageWebAppCosmosDbByMsi.exe
 
-## More information ##
+## More information
 
 [Azure Management Libraries for C#](https://github.com/Azure/azure-sdk-for-net/tree/Fluent)
 [Azure .Net Developer Center](https://azure.microsoft.com/en-us/develop/net/)
