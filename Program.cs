@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Microsoft.Azure.KeyVault;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 using Microsoft.Azure.Management.AppService.Fluent;
 using Microsoft.Azure.Management.CosmosDB.Fluent;
 using Microsoft.Azure.Management.CosmosDB.Fluent.Models;
@@ -11,13 +12,11 @@ using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Azure.Management.Samples.Common;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
-using Microsoft.Rest.Azure.Authentication;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
+using System.Text.Json;
 
 namespace ManageWebAppCosmosDbByMsi
 {
@@ -78,15 +77,18 @@ namespace ManageWebAppCosmosDbByMsi
                 //============================================================
                 // Store Cosmos DB credentials in Key Vault
 
-                IKeyVaultClient keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(async (authority, resource, scope) =>
-                {
-                    var context = new AuthenticationContext(authority, TokenCache.DefaultShared);
-                    var result = await context.AcquireTokenAsync(resource, new ClientCredential(servicePrincipalInfo.ClientId, servicePrincipalInfo.ClientSecret));
-                    return result.AccessToken;
-                }), ((KeyVaultManagementClient)azure.Vaults.Manager.Inner).HttpClient);
-                keyVaultClient.SetSecretAsync(vault.VaultUri, "azure-documentdb-uri", cosmosDBAccount.DocumentEndpoint).GetAwaiter().GetResult();
-                keyVaultClient.SetSecretAsync(vault.VaultUri, "azure-documentdb-key", cosmosDBAccount.ListKeys().PrimaryMasterKey).GetAwaiter().GetResult();
-                keyVaultClient.SetSecretAsync(vault.VaultUri, "azure-documentdb-database", "tododb").GetAwaiter().GetResult();
+                string json = Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION");
+
+                var response = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                response.TryGetValue("tenatId", out string tenantId);
+
+                var credential = new ClientSecretCredential(tenantId, servicePrincipalInfo.ClientId, servicePrincipalInfo.ClientSecret);
+
+                var client = new SecretClient(new Uri(vault.VaultUri), credential);
+
+                client.SetSecretAsync("azure-documentdb-uri", cosmosDBAccount.DocumentEndpoint);
+                client.SetSecretAsync("azure-documentdb-key", cosmosDBAccount.ListKeys().PrimaryMasterKey);
+                client.SetSecretAsync("azure-documentdb-database", "tododb");
 
                 //============================================================
                 // Create a web app with a new app service plan
@@ -161,7 +163,7 @@ namespace ManageWebAppCosmosDbByMsi
                 // Authenticate
                 var credentials = SdkContext.AzureCredentialsFactory.FromFile(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
 
-                var azure = Azure
+                var azure = Microsoft.Azure.Management.Fluent.Azure
                     .Configure()
                     .WithLogLevel(HttpLoggingDelegatingHandler.Level.Basic)
                     .Authenticate(credentials)
