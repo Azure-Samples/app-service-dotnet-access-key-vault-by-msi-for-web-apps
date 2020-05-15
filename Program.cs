@@ -39,6 +39,7 @@ namespace ManageWebAppCosmosDbByMsi
             string vaultName = SdkContext.RandomResourceName("vault", 20);
             string cosmosName = SdkContext.RandomResourceName("cosmosdb", 20);
             string appUrl = appName + ".azurewebsites.net";
+
             try
             {
                 //============================================================
@@ -60,6 +61,7 @@ namespace ManageWebAppCosmosDbByMsi
                 //============================================================
                 // Create a key vault
 
+                Utilities.Log("Createing an Azure Key Vault...");
                 var servicePrincipalInfo = ParseAuthFile(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
 
                 IVault vault = azure.Vaults
@@ -73,16 +75,14 @@ namespace ManageWebAppCosmosDbByMsi
                         .Create();
 
                 SdkContext.DelayProvider.Delay(10000);
+                Utilities.Log("Created Azure Key Vault");
+                Utilities.Log(vault.Name);
 
                 //============================================================
                 // Store Cosmos DB credentials in Key Vault
 
-                string json = Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION");
-
-                var response = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-                response.TryGetValue("tenatId", out string tenantId);
-
-                var credential = new ClientSecretCredential(tenantId, servicePrincipalInfo.ClientId, servicePrincipalInfo.ClientSecret);
+                // Parse the auth file's clientId, clientSecret, and tenantId to ClientSecretCredential
+                ClientSecretCredential credential = ParseAuthFileToCredential(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
 
                 var client = new SecretClient(new Uri(vault.VaultUri), credential);
 
@@ -183,13 +183,15 @@ namespace ManageWebAppCosmosDbByMsi
         private static ServicePrincipalLoginInformation ParseAuthFile(string authFile)
         {
             var info = new ServicePrincipalLoginInformation();
+            string tenantId = string.Empty;
 
             var lines = File.ReadLines(authFile);
             if (lines.First().Trim().StartsWith("{"))
             {
                 string json = string.Join("", lines);
-                var jsonConfig = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+                var jsonConfig = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
                 info.ClientId = jsonConfig["clientId"];
+
                 if (jsonConfig.ContainsKey("clientSecret"))
                 {
                     info.ClientSecret = jsonConfig["clientSecret"];
@@ -217,6 +219,19 @@ namespace ManageWebAppCosmosDbByMsi
             }
 
             return info;
+        }
+
+        private static ClientSecretCredential ParseAuthFileToCredential(string authFile)
+        {
+            var authData = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(authFile));
+
+            authData.TryGetValue("clientId", out string clientId);
+            authData.TryGetValue("clientSecret", out string clientSecret);
+            authData.TryGetValue("tenantId", out string tenantId);
+
+            ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+
+            return credential;
         }
     }
 }
