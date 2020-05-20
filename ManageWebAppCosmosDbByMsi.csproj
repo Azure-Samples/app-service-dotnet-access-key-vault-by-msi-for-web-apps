@@ -10,7 +10,6 @@
 
   <PropertyGroup>
     <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netstandard2.0' ">$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
-    <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0</NetStandardImplicitPackageVersion>
     <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
     <ApplicationIcon />
     <OutputTypeEx>exe</OutputTypeEx>
