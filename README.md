@@ -24,8 +24,6 @@ urlFragment: app-service-dotnet-access-key-vault-by-msi-for-web-apps
 
 To complete this tutorial:
 
-* Install .NET Core 2.0 version for [Linux] or [Windows]
-
 If you don't have an Azure subscription, create a [free account] before you begin.
 
 ### Create an auth file
@@ -77,8 +75,6 @@ dotnet run
 This project has adopted the [Microsoft Open Source Code of Conduct]. For more information see the [Code of Conduct FAQ] or contact [opencode@microsoft.com] with any additional questions or comments.
 
 <!-- LINKS -->
-[Linux]: https://dotnet.microsoft.com/download
-[Windows]: https://dotnet.microsoft.com/download
 [free account]: https://azure.microsoft.com/free/?WT.mc_id=A261C142F
 [Microsoft Open Source Code of Conduct]: https://opensource.microsoft.com/codeofconduct/
 [Code of Conduct FAQ]: https://opensource.microsoft.com/codeofconduct/faq/
