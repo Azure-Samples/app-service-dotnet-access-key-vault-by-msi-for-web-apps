@@ -7,8 +7,8 @@ products:
   - dotnet
   - azure-app-service
   - azure-key-vault
-  - azure-cosmosDB
-description: "This sample show how to use Azure Key Vault store Cosmos DB credential, and then create a web app interacts with the Cosmos DB."
+  - azure-cosmosdb
+description: "This sample shows how to use Azure Key Vault to store Cosmos DB key, and then create a web app that interacts with the Cosmos DB."
 urlFragment: app-service-dotnet-access-key-vault-by-msi-for-web-apps
 ---
 
@@ -22,7 +22,7 @@ If you don't have an Azure subscription, create a [free account] before you begi
 
 ### Create an auth file
 
-This project requires a auth file be stored in an environment variable securely on the machine running the sample. You can generate this file using Azure CLI 2.0 through the following command. Make sure you selected your subscription by az account set --subscription <name or id> and you have the privileges to create service principals.
+This project requires an auth file path be stored in an environment variable securely on the machine running the sample. You can generate this file using Azure CLI 2.0 through the following command. Make sure you selected your subscription by az account set --subscription <name or id> and you have the privileges to create service principals.
 
 ```azure-cli
 az ad sp create-for-rbac --sdk-auth > my.azureauth

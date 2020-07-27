@@ -31,6 +31,8 @@ using Microsoft.Azure.Management.Sql.Fluent;
 using Microsoft.Azure.Management.Storage.Fluent;
 using Microsoft.Azure.Management.Storage.Fluent.Models;
 using Microsoft.Azure.Management.TrafficManager.Fluent;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json.Linq;
 using Renci.SshNet;
 using System;
@@ -2908,20 +2910,43 @@ namespace Microsoft.Azure.Management.Samples.Common
         {
             if (!IsRunningMocked)
             {
-                BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
+                CloudStorageAccount storageAccount;
+
+                try
+                {
+                    storageAccount = CloudStorageAccount.Parse(connectionString);
+                }
+                catch (FormatException)
+                {
+                    Utilities.Log("Invalid storage account information provided. Please confirm the AccountName and AccountKey are valid in the app.config file - then restart the sample.");
+                    Utilities.ReadLine();
+                    throw;
+                }
+                catch (ArgumentException)
+                {
+                    Utilities.Log("Invalid storage account information provided. Please confirm the AccountName and AccountKey are valid in the app.config file - then restart the sample.");
+                    Utilities.ReadLine();
+                    throw;
+                }
+
+                // Create a blob client for interacting with the blob service.
+                var blobClient = storageAccount.CreateCloudBlobClient();
 
                 // Create a container for organizing blobs within the storage account.
                 Utilities.Log("1. Creating Container");
-                var container = blobServiceClient.GetBlobContainerClient(containerName);
-                container.CreateIfNotExists();
+                var container = blobClient.GetContainerReference(containerName);
+                container.CreateIfNotExistsAsync().GetAwaiter().GetResult();
 
+                var containerPermissions = new BlobContainerPermissions();
+                // Include public access in the permissions object
+                containerPermissions.PublicAccess = BlobContainerPublicAccessType.Container;
                 // Set the permissions on the container
-                container.SetAccessPolicy(PublicAccessType.BlobContainer);
+                container.SetPermissionsAsync(containerPermissions).GetAwaiter().GetResult();
 
                 foreach (var filePath in filePaths)
                 {
-                    var blob = container.GetBlobClient(Path.GetFileName(filePath));
-                    blob.Upload(filePath);
+                    var blob = container.GetBlockBlobReference(Path.GetFileName(filePath));
+                    blob.UploadFromFileAsync(filePath).GetAwaiter().GetResult();
                 }
             }
         }
@@ -2930,12 +2955,29 @@ namespace Microsoft.Azure.Management.Samples.Common
         {
             if (!IsRunningMocked)
             {
-                BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
-
+                CloudStorageAccount storageAccount;
+                try
+                {
+                    storageAccount = CloudStorageAccount.Parse(connectionString);
+                }
+                catch (FormatException)
+                {
+                    Utilities.Log("Invalid storage account information provided. Please confirm the AccountName and AccountKey are valid in the app.config file - then restart the sample.");
+                    Utilities.ReadLine();
+                    throw;
+                }
+                catch (ArgumentException)
+                {
+                    Utilities.Log("Invalid storage account information provided. Please confirm the AccountName and AccountKey are valid in the app.config file - then restart the sample.");
+                    Utilities.ReadLine();
+                    throw;
+                }
+                // Create a blob client for interacting with the blob service.
+                var blobClient = storageAccount.CreateCloudBlobClient();
                 // Create a container for organizing blobs within the storage account.
                 Utilities.Log("Creating Container");
-                var container = blobServiceClient.GetBlobContainerClient(containerName);
-                container.CreateIfNotExists();
+                var container = blobClient.GetContainerReference(containerName);
+                container.CreateIfNotExistsAsync().GetAwaiter().GetResult();
             }
         }
 
@@ -3060,15 +3102,16 @@ namespace Microsoft.Azure.Management.Samples.Common
             return Path.Combine(Utilities.ProjectPath, "Asset", certificateName);
         }
 
-        public static async Task SendMessageToTopic(string connectionString, string topicName, string message)
+        public static void SendMessageToTopic(string connectionString, string topicName, string message)
         {
             if (!IsRunningMocked)
             {
                 try
                 {
-                    await using var client = new ServiceBusClient(connectionString);
+                    ServiceBusClient client = new ServiceBusClient(connectionString);
                     var sender = client.CreateSender(topicName);
-                    await sender.SendAsync(new ServiceBusMessage(Encoding.UTF8.GetBytes(message)));
+
+                    sender.SendAsync(new ServiceBusMessage(Encoding.UTF8.GetBytes(message))).GetAwaiter().GetResult();
                 }
                 catch (Exception)
                 {
@@ -3076,15 +3119,16 @@ namespace Microsoft.Azure.Management.Samples.Common
             }
         }
 
-        public static async Task SendMessageToQueue(string connectionString, string queueName, string message)
+        public static void SendMessageToQueue(string connectionString, string queueName, string message)
         {
             if (!IsRunningMocked)
             {
                 try
                 {
-                    await using var client = new ServiceBusClient(connectionString);
+                    ServiceBusClient client = new ServiceBusClient(connectionString);
                     var sender = client.CreateSender(queueName);
-                    await sender.SendAsync(new ServiceBusMessage(Encoding.UTF8.GetBytes(message)));
+
+                    sender.SendAsync(new ServiceBusMessage(Encoding.UTF8.GetBytes(message))).GetAwaiter().GetResult();
                 }
                 catch (Exception)
                 {

@@ -62,7 +62,7 @@ namespace ManageWebAppCosmosDbByMsi
                 // Create a key vault
 
                 Utilities.Log("Createing an Azure Key Vault...");
-                var servicePrincipalInfo = ParseAuthFile(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
+                var servicePrincipalInfo = GetServicePrincipalLoginInformation(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
 
                 IVault vault = azure.Vaults
                         .Define(vaultName)
@@ -82,7 +82,7 @@ namespace ManageWebAppCosmosDbByMsi
                 // Store Cosmos DB credentials in Key Vault
 
                 // Parse the auth file's clientId, clientSecret, and tenantId to ClientSecretCredential
-                ClientSecretCredential credential = ParseAuthFileToCredential(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
+                ClientSecretCredential credential = GetClientSecretCredential(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
 
                 var client = new SecretClient(new Uri(vault.VaultUri), credential);
 
@@ -180,25 +180,17 @@ namespace ManageWebAppCosmosDbByMsi
             }
         }
 
-        private static ServicePrincipalLoginInformation ParseAuthFile(string authFile)
+        private static Dictionary<string, string> ParseAuthFile(string authFile)
         {
-            var info = new ServicePrincipalLoginInformation();
-            string tenantId = string.Empty;
-
             var lines = File.ReadLines(authFile);
             if (lines.First().Trim().StartsWith("{"))
             {
                 string json = string.Join("", lines);
-                var jsonConfig = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-                info.ClientId = jsonConfig["clientId"];
-
-                if (jsonConfig.ContainsKey("clientSecret"))
-                {
-                    info.ClientSecret = jsonConfig["clientSecret"];
-                }
+                return JsonSerializer.Deserialize<Dictionary<string, string>>(json);
             }
             else
             {
+                Dictionary<string, string> authDict = new Dictionary<string, string>();
                 lines.All(line =>
                 {
                     if (line.Trim().StartsWith("#"))
@@ -206,28 +198,34 @@ namespace ManageWebAppCosmosDbByMsi
                     var keyVal = line.Trim().Split(new char[] { '=' }, 2);
                     if (keyVal.Length < 2)
                         return true; // Ignore lines that don't look like $$$=$$$
-                    if (keyVal[0].Equals("client", StringComparison.OrdinalIgnoreCase))
-                    {
-                        info.ClientId = keyVal[1];
-                    }
-                    if (keyVal[0].Equals("key", StringComparison.OrdinalIgnoreCase))
-                    {
-                        info.ClientSecret = keyVal[1];
-                    }
+                    authDict.Add(keyVal[0], keyVal[1]);
                     return true;
                 });
+                return authDict;
             }
-
-            return info;
         }
 
-        private static ClientSecretCredential ParseAuthFileToCredential(string authFile)
+        private static ServicePrincipalLoginInformation GetServicePrincipalLoginInformation(string authfile)
         {
-            var authData = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(authFile));
+            var authDict = ParseAuthFile(authfile);
 
-            authData.TryGetValue("clientId", out string clientId);
-            authData.TryGetValue("clientSecret", out string clientSecret);
-            authData.TryGetValue("tenantId", out string tenantId);
+            var info = new ServicePrincipalLoginInformation();
+            
+            authDict.TryGetValue("clientId", out string clientId);
+            authDict.TryGetValue("clientSecret", out string clientSecret);
+            info.ClientId = clientId;
+            info.ClientSecret = clientSecret;
+
+            return info;
+
+        }
+        private static ClientSecretCredential GetClientSecretCredential(string authFile)
+        {
+            var authDict = ParseAuthFile(authFile);
+
+            authDict.TryGetValue("clientId", out string clientId);
+            authDict.TryGetValue("clientSecret", out string clientSecret);
+            authDict.TryGetValue("tenantId", out string tenantId);
 
             ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
 
