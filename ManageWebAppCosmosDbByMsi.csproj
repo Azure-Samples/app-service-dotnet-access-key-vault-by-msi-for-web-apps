@@ -17,10 +17,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.1.1" />
-    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.0.0-preview.2" />
-    <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.0.3" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.4.2" />
+    <PackageReference Include="Azure.Identity" Version="1.2.1" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.0.0-preview.6" />
+    <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.1.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.5.1" />
     <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.19" />
     <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.30.0" />
     <PackageReference Include="Microsoft.Azure.KeyVault" Version="3.0.1" />
@@ -59,7 +59,7 @@
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.Reflection" />
-    <PackageReference Include="Microsoft.Azure.DocumentDB" Version="2.10.3" />
+    <PackageReference Include="Microsoft.Azure.DocumentDB" Version="2.11.6" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Asset\documentdb-dotnet-todo-app\src\App_Start\BundleConfig.cs" />
