@@ -1,26 +1,25 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Microsoft.Azure.Management.AppService.Fluent;
-using Microsoft.Azure.Management.AppService.Fluent.Models;
-using Microsoft.Azure.Management.Compute.Fluent;
-using Microsoft.Azure.Management.ContainerRegistry.Fluent;
-using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
-using Microsoft.Azure.Management.ContainerService.Fluent;
-using Microsoft.Azure.Management.ContainerService.Fluent.Models;
-using Microsoft.Azure.Management.KeyVault.Fluent;
-using Microsoft.Azure.Management.Network.Fluent;
-using Microsoft.Azure.Management.Redis.Fluent;
-using Microsoft.Azure.Management.Storage.Fluent;
-using Microsoft.Azure.Management.Storage.Fluent.Models;
+using Azure.ResourceManager.AppService;
+using Azure.ResourceManager.AppService.Models;
+using Azure.ResourceManager.Compute;
+using Azure.ResourceManager.ContainerRegistry;
+using Azure.ResourceManager.ContainerRegistry.Models;
+using Azure.ResourceManager.ContainerService;
+using Azure.ResourceManager.ContainerService.Models;
+using Azure.ResourceManager.KeyVault;
+using Azure.ResourceManager.Network;
+using Azure.ResourceManager.Redis;
+using Azure.ResourceManager.Storage;
+using Azure.ResourceManager.Storage.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.Azure.Management.Sql.Fluent;
-using Microsoft.Azure.Management.TrafficManager.Fluent;
-using Microsoft.Azure.Management.Dns.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent;
+using Azure.ResourceManager.Sql;
+using Azure.ResourceManager.TrafficManager;
+using Azure.ResourceManager.Dns;
 using System.Diagnostics;
 using System.IO;
 using Newtonsoft.Json.Linq;
@@ -29,27 +28,27 @@ using CoreFtp;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage;
 using Renci.SshNet;
-using Microsoft.Azure.Management.Search.Fluent;
-using Microsoft.Azure.Management.Search.Fluent.Models;
-using Microsoft.Azure.Management.ServiceBus.Fluent;
+using Azure.ResourceManager.Search;
+using Azure.ResourceManager.Search.Models;
+using Azure.ResourceManager.ServiceBus;
 using Microsoft.Azure.ServiceBus;
 using System.Threading;
 using System.Net.Http.Headers;
-using Microsoft.Azure.Management.BatchAI.Fluent;
-using Microsoft.Azure.Management.CosmosDB.Fluent;
-using Microsoft.Azure.Management.CosmosDB.Fluent.Models;
-using Microsoft.Azure.Management.Compute.Fluent.Models;
-using Microsoft.Azure.Management.Graph.RBAC.Fluent;
-using Microsoft.Azure.Management.Graph.RBAC.Fluent.Models;
-using Microsoft.Azure.Management.Network.Fluent.Models;
-using Microsoft.Azure.Management.ContainerInstance.Fluent;
-using Microsoft.Azure.Management.Locks.Fluent;
-using Microsoft.Azure.Management.Msi.Fluent;
-using Microsoft.Azure.Management.Eventhub.Fluent;
-using Microsoft.Azure.Management.Monitor.Fluent;
-using Microsoft.Azure.Management.PrivateDns.Fluent;
+using Azure.ResourceManager.Batch;
+using Azure.ResourceManager.CosmosDB;
+using Azure.ResourceManager.CosmosDB.Models;
+using Azure.ResourceManager.Compute.Models;
+using Azure.ResourceManager.Network.Models;
+using Azure.ResourceManager.ContainerInstance;
+using Azure.ResourceManager.ManagedServiceIdentities;
+using Azure.ResourceManager.EventHubs;
+using Azure.ResourceManager.Monitor;
+using Azure.ResourceManager.PrivateDns;
+using Azure.ResourceManager.Resources;
+using Azure.Core;
+using Microsoft.Azure.Management.AppService.Fluent;
 
-namespace Microsoft.Azure.Management.Samples.Common
+namespace Azure.ResourceManager.Samples.Common
 {
     public static class Utilities
     {
@@ -94,42 +93,42 @@ namespace Microsoft.Azure.Management.Samples.Common
         }
 
         // Print resource group info.
-        public static void PrintResourceGroup(IResourceGroup resource)
+        public static void PrintResourceGroup(ResourceGroupResource resource)
         {
             StringBuilder info = new StringBuilder();
             info.Append("Resource Group: ").Append(resource.Id)
-                    .Append("\n\tName: ").Append(resource.Name)
-                    .Append("\n\tRegion: ").Append(resource.Region)
-                    .Append("\n\tTags: ").Append(resource.Tags.ToString());
+                    .Append("\n\tName: ").Append(resource.Data.Name)
+                    .Append("\n\tRegion: ").Append(resource.Data.Location)
+                    .Append("\n\tTags: ").Append(resource.Data.Tags.ToString());
             Log(info.ToString());
         }
 
         // Print UserAssigned MSI info.
-        public static void PrintIdentity(IIdentity resource)
+        public static void PrintIdentity(Azure.ResourceManager.ManagedServiceIdentities.UserAssignedIdentityResource resource)
         {
             StringBuilder info = new StringBuilder();
             info.Append("Identity: ").Append(resource.Id)
-                    .Append("\n\tName: ").Append(resource.Name)
-                    .Append("\n\tRegion: ").Append(resource.Region)
-                    .Append("\n\tTags: ").Append(resource.Tags.ToString())
-                    .Append("\n\tService Principal Id: ").Append(resource.PrincipalId)
-                    .Append("\n\tClient Id: ").Append(resource.ClientId)
-                    .Append("\n\tTenant Id: ").Append(resource.TenantId)
-                    .Append("\n\tClient Secret Url: ").Append(resource.ClientSecretUrl);
+                    .Append("\n\tName: ").Append(resource.Data.Name)
+                    .Append("\n\tRegion: ").Append(resource.Data.Location)
+                    .Append("\n\tTags: ").Append(resource.Data.Tags.ToString())
+                    .Append("\n\tService Principal Id: ").Append(resource.Data.PrincipalId)
+                    .Append("\n\tClient Id: ").Append(resource.Data.ClientId)
+                    .Append("\n\tTenant Id: ").Append(resource.Data.TenantId)
+                    .Append("\n\tClient Secret Url: ").Append(resource.Data.ClientId);
             Log(info.ToString());
         }
 
         // Print app gateway info
-        public static void PrintAppGateway(IApplicationGateway resource)
+        public static void PrintAppGateway(ApplicationGatewayResource resource)
         {
             var info = new StringBuilder();
             info.Append("App gateway: ").Append(resource.Id)
-                    .Append("Name: ").Append(resource.Name)
-                    .Append("\n\tResource group: ").Append(resource.ResourceGroupName)
-                    .Append("\n\tRegion: ").Append(resource.Region)
-                    .Append("\n\tTags: ").Append(resource.Tags.ToString())
-                    .Append("\n\tSKU: ").Append(resource.Sku.ToString())
-                    .Append("\n\tOperational state: ").Append(resource.OperationalState)
+                    .Append("Name: ").Append(resource.Data.Name)
+                    .Append("\n\tResource group: ").Append(resource.Id.ResourceGroupName)
+                    .Append("\n\tRegion: ").Append(resource.Data.Location)
+                    .Append("\n\tTags: ").Append(resource.Data.Tags.ToString())
+                    .Append("\n\tSKU: ").Append(resource.Data.Sku.ToString())
+                    .Append("\n\tOperational state: ").Append(resource.Data.OperationalState)
                     .Append("\n\tInternet-facing? ").Append(resource.IsPublic)
                     .Append("\n\tInternal? ").Append(resource.IsPrivate)
                     .Append("\n\tDefault private IP address: ").Append(resource.PrivateIPAddress)
@@ -408,13 +407,13 @@ namespace Microsoft.Azure.Management.Samples.Common
             Log(builder.ToString());
         }
 
-        public static void Print(ServiceBus.Fluent.ISubscription serviceBusSubscription)
+        public static void Print(SubscriptionResource serviceBusSubscription)
         {
             StringBuilder builder = new StringBuilder()
                     .Append("Service bus subscription: ").Append(serviceBusSubscription.Id)
-                    .Append("\n\tName: ").Append(serviceBusSubscription.Name)
-                    .Append("\n\tResourceGroupName: ").Append(serviceBusSubscription.ResourceGroupName)
-                    .Append("\n\tCreatedAt: ").Append(serviceBusSubscription.CreatedAt)
+                    .Append("\n\tName: ").Append(serviceBusSubscription.Id.Name)
+                    .Append("\n\tResourceGroupName: ").Append(serviceBusSubscription.Id.ResourceGroupName)
+                    .Append("\n\tCreatedAt: ").Append(serviceBusSubscription.Data.)
                     .Append("\n\tUpdatedAt: ").Append(serviceBusSubscription.UpdatedAt)
                     .Append("\n\tAccessedAt: ").Append(serviceBusSubscription.AccessedAt)
                     .Append("\n\tActiveMessageCount: ").Append(serviceBusSubscription.ActiveMessageCount)
@@ -1324,7 +1323,7 @@ namespace Microsoft.Azure.Management.Samples.Common
             Utilities.Log(builder.ToString());
         }
 
-        public static void PrintDatabase(Microsoft.Azure.Management.Sql.Fluent.ISqlDatabase database)
+        public static void PrintDatabase(Azure.ResourceManager.Sql.Fluent.ISqlDatabase database)
         {
             var builder = new StringBuilder().Append("Sql Database: ").Append(database.Id)
                     .Append("Name: ").Append(database.Name)

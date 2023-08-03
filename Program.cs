@@ -1,6 +1,20 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using Azure.ResourceManager.KeyVault;
+using Azure.ResourceManager.AppService;
+using Azure.ResourceManager.CosmosDB;
+using Azure.ResourceManager.CosmosDB.Models;
+using Azure.ResourceManager;
+using Azure.Core;
+using Azure.ResourceManager.Samples.Common;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Microsoft.Rest.Azure.Authentication;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.Management.AppService.Fluent;
 using Microsoft.Azure.Management.CosmosDB.Fluent;
@@ -10,14 +24,9 @@ using Microsoft.Azure.Management.KeyVault.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
-using Microsoft.Azure.Management.Samples.Common;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
-using Microsoft.Rest.Azure.Authentication;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
+using System.Security.Cryptography;
+using Azure.ResourceManager.Resources;
+using Azure.ResourceManager.KeyVault.Models;
 
 namespace ManageWebAppCosmosDbByMsi
 {
@@ -32,28 +41,33 @@ namespace ManageWebAppCosmosDbByMsi
          *      The source code of the web app is located at Asset/documentdb-dotnet-todo-app
          */
 
-        public static void RunSample(IAzure azure)
+        public static void RunSample(ArmClient client)
         {
-            Region region = Region.USWest;
-            string appName = SdkContext.RandomResourceName("webapp-", 20);
+            AzureLocation region = AzureLocation.EastUS;
+            string appName = Azure.ResourceManager.ArmClientOptions.();
             string rgName = SdkContext.RandomResourceName("rg1NEMV_", 24);
             string vaultName = SdkContext.RandomResourceName("vault", 20);
+            string vaultSecretName = SdkContext.RandomResourceName("vaultsecret", 20);
             string cosmosName = SdkContext.RandomResourceName("cosmosdb", 20);
             string appUrl = appName + ".azurewebsites.net";
+            var lro = client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdate(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS));
+            var resourceGroup = lro.Value;
             try
             {
                 //============================================================
                 // Create a CosmosDB
 
                 Utilities.Log("Creating a CosmosDB...");
-                ICosmosDBAccount cosmosDBAccount = azure.CosmosDBAccounts.Define(cosmosName)
-                        .WithRegion(region)
-                        .WithNewResourceGroup(rgName)
-                        .WithKind(DatabaseAccountKind.GlobalDocumentDB)
-                        .WithEventualConsistency()
-                        .WithWriteReplication(Region.USEast)
-                        .WithReadReplication(Region.USCentral)
-                        .Create();
+                //var lro = client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdate(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS));
+                //var resourceGroup = lro.Value;
+                CosmosDBAccountCollection cosmosDBAccountCollection = resourceGroup.GetCosmosDBAccounts();
+                IEnumerable<CosmosDBAccountLocation> list= new List<CosmosDBAccountLocation> { new CosmosDBAccountLocation() };
+                var cosmosDBData = new CosmosDBAccountCreateOrUpdateContent(region, list)
+                {
+                    Kind = CosmosDBAccountKind.GlobalDocumentDB,
+                };
+                var cosmosResource_lro = cosmosDBAccountCollection.CreateOrUpdate(Azure.WaitUntil.Completed, cosmosName, cosmosDBData);
+                var cosmosDBAccount = cosmosResource_lro.Value;
 
                 Utilities.Log("Created CosmosDB");
                 Utilities.Log(cosmosDBAccount);
@@ -63,69 +77,86 @@ namespace ManageWebAppCosmosDbByMsi
 
                 var servicePrincipalInfo = ParseAuthFile(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
 
-                IVault vault = azure.Vaults
-                        .Define(vaultName)
-                        .WithRegion(region)
-                        .WithNewResourceGroup(rgName)
-                        .DefineAccessPolicy()
-                            .ForServicePrincipal(servicePrincipalInfo.ClientId)
-                            .AllowSecretAllPermissions()
-                            .Attach()
-                        .Create();
-
+                var keyVaultCollection = resourceGroup.GetKeyVaults();
+                var keyVaultData = new KeyVaultCreateOrUpdateContent(region, new KeyVaultProperties(new Guid("72f988bf-86f1-41af-91ab-2d7cd011db47"), new KeyVaultSku(KeyVaultSkuFamily.A, KeyVaultSkuName.Standard)) { } )
+                {
+                };
+                var keyVault_lro = keyVaultCollection.CreateOrUpdate(Azure.WaitUntil.Completed, cosmosName, keyVaultData);
+                var keyVault = keyVault_lro.Value;
                 SdkContext.DelayProvider.Delay(10000);
 
                 //============================================================
                 // Store Cosmos DB credentials in Key Vault
 
-                IKeyVaultClient keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(async (authority, resource, scope) =>
+                var keyvaultSecretCollection = keyVault.GetKeyVaultSecrets();
+                var secretData1 = new KeyVaultSecretCreateOrUpdateContent(new SecretProperties()
                 {
-                    var context = new AuthenticationContext(authority, TokenCache.DefaultShared);
-                    var result = await context.AcquireTokenAsync(resource, new ClientCredential(servicePrincipalInfo.ClientId, servicePrincipalInfo.ClientSecret));
-                    return result.AccessToken;
-                }), ((KeyVaultManagementClient)azure.Vaults.Manager.Inner).HttpClient);
-                keyVaultClient.SetSecretAsync(vault.VaultUri, "azure-documentdb-uri", cosmosDBAccount.DocumentEndpoint).GetAwaiter().GetResult();
-                keyVaultClient.SetSecretAsync(vault.VaultUri, "azure-documentdb-key", cosmosDBAccount.ListKeys().PrimaryMasterKey).GetAwaiter().GetResult();
-                keyVaultClient.SetSecretAsync(vault.VaultUri, "azure-documentdb-database", "tododb").GetAwaiter().GetResult();
-
+                    Value = cosmosDBAccount.Data.DocumentEndpoint
+                });
+                {
+                };
+                var secret1_lro = keyvaultSecretCollection.CreateOrUpdate(Azure.WaitUntil.Completed, "azure-documentdb-uri", secretData1);
+                var secretData2 = new KeyVaultSecretCreateOrUpdateContent(new SecretProperties()
+                {
+                    Value = "tododb"
+                });
+                {
+                };
+                var secret2_lro = keyvaultSecretCollection.CreateOrUpdate(Azure.WaitUntil.Completed, "azure-documentdb-key", secretData2);
+                var secretData3 = new KeyVaultSecretCreateOrUpdateContent(new SecretProperties()
+                {
+                    Value = cosmosDBAccount.GetKeys().Value.PrimaryMasterKey
+                });
+                {
+                };
+                var secret3_lro = keyvaultSecretCollection.CreateOrUpdate(Azure.WaitUntil.Completed, "azure-documentdb-key", secretData2);
+                var secret1 = secret1_lro.Value;
+                var secret2 = secret2_lro.Value;
+                var secret3 = secret3_lro.Value;
                 //============================================================
                 // Create a web app with a new app service plan
 
                 Utilities.Log("Creating web app " + appName + " in resource group " + rgName + "...");
 
-                IWebApp app = azure.WebApps
-                        .Define(appName)
-                        .WithRegion(region)
-                        .WithExistingResourceGroup(rgName)
-                        .WithNewWindowsPlan(PricingTier.StandardS1)
-                        .WithNetFrameworkVersion(NetFrameworkVersion.V4_6)
-                        .WithAppSetting("AZURE_KEYVAULT_URI", vault.VaultUri)
-                        .WithSystemAssignedManagedServiceIdentity()
-                        .Create();
+                var webSiteCollection = resourceGroup.GetWebSites();
+                var webSiteData = new WebSiteData(region)
+                {
+                   SiteConfig = new Azure.ResourceManager.AppService.Models.SiteConfigProperties()
+                   {
+                       WindowsFxVersion = "PricingTier.StandardS1",
+                       NetFrameworkVersion = "NetFrameworkVersion.V4_6",
+                   }
+                };
+                var webSite_lro = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, appName, webSiteData);
+                var webSite = webSite_lro.Value;
 
-                Utilities.Log("Created web app " + app.Name);
-                Utilities.Log(app);
+                Utilities.Log("Created web app " + webSite.Data.Name);
+                Utilities.Log(webSite);
 
                 //============================================================
                 // Update vault to allow the web app to access
 
-                vault.Update()
-                        .DefineAccessPolicy()
-                            .ForObjectId(app.SystemAssignedManagedServiceIdentityPrincipalId)
-                            .AllowSecretAllPermissions()
-                            .Attach()
-                        .Apply();
+                keyVault.Update(new KeyVaultPatch()
+                {
+                    Properties = new KeyVaultPatchProperties()
+                    {
+                        AccessPolicies =
+                        {
+                            new KeyVaultAccessPolicy(new Guid(""), "webSite.Data.Properties.SystemAssignedManagedServiceIdentityPrincipalId" ,new IdentityAccessPermissions())
+                        }
+                    }
+                });
 
                 //============================================================
                 // Deploy to web app through local Git
 
                 Utilities.Log("Deploying a local asp.net application to " + appName + " through Git...");
 
-                var profile = app.GetPublishingProfile();
+                var profile = webSite.Data.HostingEnvironmentProfile;
                 Utilities.DeployByGit(profile, "documentdb-dotnet-todo-app");
 
-                Utilities.Log("Deployment to web app " + app.Name + " completed");
-                Utilities.Print(app);
+                Utilities.Log("Deployment to web app " + webSite.Data.Name + " completed");
+                Utilities.Print(webSite);
 
                 // warm up
                 Utilities.Log("Warming up " + appUrl + "...");
@@ -139,7 +170,7 @@ namespace ManageWebAppCosmosDbByMsi
                 try
                 {
                     Utilities.Log("Deleting Resource Group: " + rgName);
-                    azure.ResourceGroups.DeleteByName(rgName);
+                    resourceGroup.Delete(Azure.WaitUntil.Completed);
                     Utilities.Log("Deleted Resource Group: " + rgName);
                 }
                 catch (NullReferenceException)
@@ -161,16 +192,12 @@ namespace ManageWebAppCosmosDbByMsi
                 // Authenticate
                 var credentials = SdkContext.AzureCredentialsFactory.FromFile(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
 
-                var azure = Azure
-                    .Configure()
-                    .WithLogLevel(HttpLoggingDelegatingHandler.Level.Basic)
-                    .Authenticate(credentials)
-                    .WithDefaultSubscription();
+                var client = new ArmClient(null, "db1ab6f0-4769-4b27-930e-01e2ef9c123c");
 
                 // Print selected subscription
-                Utilities.Log("Selected subscription: " + azure.SubscriptionId);
+                Utilities.Log("Selected subscription: " + client.GetSubscriptions().Id);
 
-                RunSample(azure);
+                RunSample(client);
             }
             catch (Exception e)
             {
