@@ -1,32 +1,22 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Azure.ResourceManager.KeyVault;
+using Azure.Core;
+using Azure.Identity;
+using Azure.ResourceManager;
 using Azure.ResourceManager.AppService;
 using Azure.ResourceManager.CosmosDB;
 using Azure.ResourceManager.CosmosDB.Models;
-using Azure.ResourceManager;
-using Azure.Core;
+using Azure.ResourceManager.KeyVault;
+using Azure.ResourceManager.KeyVault.Models;
+using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Samples.Common;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
-using Microsoft.Rest.Azure.Authentication;
+using Microsoft.Azure.Management.ResourceManager.Fluent;
+using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using Microsoft.Azure.KeyVault;
-using Microsoft.Azure.Management.AppService.Fluent;
-using Microsoft.Azure.Management.CosmosDB.Fluent;
-using Microsoft.Azure.Management.CosmosDB.Fluent.Models;
-using Microsoft.Azure.Management.Fluent;
-using Microsoft.Azure.Management.KeyVault.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
-using System.Security.Cryptography;
-using Azure.ResourceManager.Resources;
-using Azure.ResourceManager.KeyVault.Models;
 
 namespace ManageWebAppCosmosDbByMsi
 {
@@ -44,11 +34,11 @@ namespace ManageWebAppCosmosDbByMsi
         public static void RunSample(ArmClient client)
         {
             AzureLocation region = AzureLocation.EastUS;
-            string appName = Azure.ResourceManager.ArmClientOptions.();
-            string rgName = SdkContext.RandomResourceName("rg1NEMV_", 24);
-            string vaultName = SdkContext.RandomResourceName("vault", 20);
-            string vaultSecretName = SdkContext.RandomResourceName("vaultsecret", 20);
-            string cosmosName = SdkContext.RandomResourceName("cosmosdb", 20);
+            string appName = Utilities.CreateRandomName("app");
+            string rgName = Utilities.CreateRandomName("rg1NEMV_");
+            string vaultName = Utilities.CreateRandomName("vault");
+            string vaultSecretName = Utilities.CreateRandomName("vaultsecret");
+            string cosmosName = Utilities.CreateRandomName("cosmosdb");
             string appUrl = appName + ".azurewebsites.net";
             var lro = client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdate(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS));
             var resourceGroup = lro.Value;
@@ -190,9 +180,12 @@ namespace ManageWebAppCosmosDbByMsi
             {
                 //=================================================================
                 // Authenticate
-                var credentials = SdkContext.AzureCredentialsFactory.FromFile(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
-
-                var client = new ArmClient(null, "db1ab6f0-4769-4b27-930e-01e2ef9c123c");
+                var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+                var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                ArmClient client = new ArmClient(credential, subscription);
 
                 // Print selected subscription
                 Utilities.Log("Selected subscription: " + client.GetSubscriptions().Id);
