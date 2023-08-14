@@ -11,12 +11,11 @@ using Azure.ResourceManager.KeyVault;
 using Azure.ResourceManager.KeyVault.Models;
 using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Samples.Common;
-using Microsoft.Azure.Management.ResourceManager.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace ManageWebAppCosmosDbByMsi
 {
@@ -73,7 +72,7 @@ namespace ManageWebAppCosmosDbByMsi
                 };
                 var keyVault_lro = keyVaultCollection.CreateOrUpdate(Azure.WaitUntil.Completed, cosmosName, keyVaultData);
                 var keyVault = keyVault_lro.Value;
-                SdkContext.DelayProvider.Delay(10000);
+                Thread.Sleep(10000);
 
                 //============================================================
                 // Store Cosmos DB credentials in Key Vault
@@ -151,7 +150,7 @@ namespace ManageWebAppCosmosDbByMsi
                 // warm up
                 Utilities.Log("Warming up " + appUrl + "...");
                 Utilities.CheckAddress("http://" + appUrl);
-                SdkContext.DelayProvider.Delay(5000);
+                Thread.Sleep(5000);
                 Utilities.Log("CURLing " + appUrl + "...");
                 Utilities.Log(Utilities.CheckAddress("http://" + appUrl));
             }
