@@ -64,8 +64,6 @@ namespace ManageWebAppCosmosDbByMsi
                 //============================================================
                 // Create a key vault
 
-                var servicePrincipalInfo = ParseAuthFile(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
-
                 var keyVaultCollection = resourceGroup.GetKeyVaults();
                 var keyVaultData = new KeyVaultCreateOrUpdateContent(region, new KeyVaultProperties(new Guid("72f988bf-86f1-41af-91ab-2d7cd011db47"), new KeyVaultSku(KeyVaultSkuFamily.A, KeyVaultSkuName.Standard)) { } )
                 {
@@ -195,45 +193,6 @@ namespace ManageWebAppCosmosDbByMsi
             {
                 Utilities.Log(e);
             }
-        }
-
-        private static ServicePrincipalLoginInformation ParseAuthFile(string authFile)
-        {
-            var info = new ServicePrincipalLoginInformation();
-
-            var lines = File.ReadLines(authFile);
-            if (lines.First().Trim().StartsWith("{"))
-            {
-                string json = string.Join("", lines);
-                var jsonConfig = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<Dictionary<string, string>>(json);
-                info.ClientId = jsonConfig["clientId"];
-                if (jsonConfig.ContainsKey("clientSecret"))
-                {
-                    info.ClientSecret = jsonConfig["clientSecret"];
-                }
-            }
-            else
-            {
-                lines.All(line =>
-                {
-                    if (line.Trim().StartsWith("#"))
-                        return true; // Ignore comments
-                    var keyVal = line.Trim().Split(new char[] { '=' }, 2);
-                    if (keyVal.Length < 2)
-                        return true; // Ignore lines that don't look like $$$=$$$
-                    if (keyVal[0].Equals("client", StringComparison.OrdinalIgnoreCase))
-                    {
-                        info.ClientId = keyVal[1];
-                    }
-                    if (keyVal[0].Equals("key", StringComparison.OrdinalIgnoreCase))
-                    {
-                        info.ClientSecret = keyVal[1];
-                    }
-                    return true;
-                });
-            }
-
-            return info;
         }
     }
 }
