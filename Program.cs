@@ -30,7 +30,7 @@ namespace ManageWebAppCosmosDbByMsi
          *      The source code of the web app is located at Asset/documentdb-dotnet-todo-app
          */
 
-        public static void RunSample(ArmClient client)
+        public static async Task RunSample(ArmClient client)
         {
             AzureLocation region = AzureLocation.EastUS;
             string appName = Utilities.CreateRandomName("app");
@@ -39,7 +39,7 @@ namespace ManageWebAppCosmosDbByMsi
             string vaultSecretName = Utilities.CreateRandomName("vaultsecret");
             string cosmosName = Utilities.CreateRandomName("cosmosdb");
             string appUrl = appName + ".azurewebsites.net";
-            var lro = client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdate(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS));
+            var lro =await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS));
             var resourceGroup = lro.Value;
             try
             {
@@ -140,7 +140,9 @@ namespace ManageWebAppCosmosDbByMsi
                 Utilities.Log("Deploying a local asp.net application to " + appName + " through Git...");
 
                 var profile = webSite.Data.HostingEnvironmentProfile;
-                Utilities.DeployByGit(profile, "documentdb-dotnet-todo-app");
+                //Utilities.DeployByGit(profile, "documentdb-dotnet-todo-app");
+                var extension = webSite.GetSiteExtension();
+                var deploy = await extension.CreateOrUpdateAsync(Azure.WaitUntil.Completed, new Azure.ResourceManager.AppService.Models.WebAppMSDeploy());
 
                 Utilities.Log("Deployment to web app " + webSite.Data.Name + " completed");
                 Utilities.Print(webSite);
@@ -171,7 +173,7 @@ namespace ManageWebAppCosmosDbByMsi
             }
         }
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             try
             {
@@ -187,7 +189,7 @@ namespace ManageWebAppCosmosDbByMsi
                 // Print selected subscription
                 Utilities.Log("Selected subscription: " + client.GetSubscriptions().Id);
 
-                RunSample(client);
+                await RunSample(client);
             }
             catch (Exception e)
             {
