@@ -1,7 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System;
 using System.Text;
+using System.Diagnostics;
 
 namespace Azure.ResourceManager.Samples.Common
 {
@@ -110,7 +115,29 @@ namespace Azure.ResourceManager.Samples.Common
             }
 
             return "[Running in PlaybackMode]";
-        }dfsf1231324
+        }
+
+        public static void DeployByGit(string userName, string userPWD, string gitUrl, string repository)
+        {
+            if (!IsRunningMocked)
+            {
+                string gitCommand = "git";
+                string gitInitArgument = @"init";
+                string gitAddArgument = @"add -A";
+                string gitCommitArgument = @"commit -am ""Initial commit"" ";
+                string gitPushArgument = $"push https://{userName}:{userPWD}@{gitUrl} master:master -f";
+
+                ProcessStartInfo info = new ProcessStartInfo(gitCommand, gitInitArgument);
+                info.WorkingDirectory = Path.Combine(ProjectPath, "Asset", repository);
+                Process.Start(info).WaitForExit();
+                info.Arguments = gitAddArgument;
+                Process.Start(info).WaitForExit();
+                info.Arguments = gitCommitArgument;
+                Process.Start(info).WaitForExit();
+                info.Arguments = gitPushArgument;
+                Process.Start(info).WaitForExit();
+            }
+        }
 
         public static void UploadFileToWebApp(Stream profile, string filePath, string fileName = null)
         {

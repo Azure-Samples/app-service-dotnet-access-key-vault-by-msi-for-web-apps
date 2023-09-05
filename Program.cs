@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Xml;
 
 namespace ManageWebAppCosmosDbByMsi
 {
@@ -47,7 +48,7 @@ namespace ManageWebAppCosmosDbByMsi
                 // Create a CosmosDB
 
                 Utilities.Log("Creating a CosmosDB...");
-                //var lro = client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdate(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS));
+                //var lro = client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS));
                 //var resourceGroup = lro.Value;
                 CosmosDBAccountCollection cosmosDBAccountCollection = resourceGroup.GetCosmosDBAccounts();
                 IEnumerable<CosmosDBAccountLocation> list= new List<CosmosDBAccountLocation> { new CosmosDBAccountLocation() };
@@ -55,7 +56,7 @@ namespace ManageWebAppCosmosDbByMsi
                 {
                     Kind = CosmosDBAccountKind.GlobalDocumentDB,
                 };
-                var cosmosResource_lro = cosmosDBAccountCollection.CreateOrUpdate(Azure.WaitUntil.Completed, cosmosName, cosmosDBData);
+                var cosmosResource_lro =await cosmosDBAccountCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, cosmosName, cosmosDBData);
                 var cosmosDBAccount = cosmosResource_lro.Value;
 
                 Utilities.Log("Created CosmosDB");
@@ -68,7 +69,7 @@ namespace ManageWebAppCosmosDbByMsi
                 var keyVaultData = new KeyVaultCreateOrUpdateContent(region, new KeyVaultProperties(new Guid("72f988bf-86f1-41af-91ab-2d7cd011db47"), new KeyVaultSku(KeyVaultSkuFamily.A, KeyVaultSkuName.Standard)) { } )
                 {
                 };
-                var keyVault_lro = keyVaultCollection.CreateOrUpdate(Azure.WaitUntil.Completed, cosmosName, keyVaultData);
+                var keyVault_lro =await keyVaultCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, cosmosName, keyVaultData);
                 var keyVault = keyVault_lro.Value;
                 Thread.Sleep(10000);
 
@@ -82,21 +83,21 @@ namespace ManageWebAppCosmosDbByMsi
                 });
                 {
                 };
-                var secret1_lro = keyvaultSecretCollection.CreateOrUpdate(Azure.WaitUntil.Completed, "azure-documentdb-uri", secretData1);
+                var secret1_lro =await keyvaultSecretCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, "azure-documentdb-uri", secretData1);
                 var secretData2 = new KeyVaultSecretCreateOrUpdateContent(new SecretProperties()
                 {
                     Value = "tododb"
                 });
                 {
                 };
-                var secret2_lro = keyvaultSecretCollection.CreateOrUpdate(Azure.WaitUntil.Completed, "azure-documentdb-key", secretData2);
+                var secret2_lro =await keyvaultSecretCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, "azure-documentdb-key", secretData2);
                 var secretData3 = new KeyVaultSecretCreateOrUpdateContent(new SecretProperties()
                 {
                     Value = cosmosDBAccount.GetKeys().Value.PrimaryMasterKey
                 });
                 {
                 };
-                var secret3_lro = keyvaultSecretCollection.CreateOrUpdate(Azure.WaitUntil.Completed, "azure-documentdb-key", secretData2);
+                var secret3_lro =await keyvaultSecretCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, "azure-documentdb-key", secretData3);
                 var secret1 = secret1_lro.Value;
                 var secret2 = secret2_lro.Value;
                 var secret3 = secret3_lro.Value;
@@ -114,7 +115,7 @@ namespace ManageWebAppCosmosDbByMsi
                        NetFrameworkVersion = "NetFrameworkVersion.V4_6",
                    }
                 };
-                var webSite_lro = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, appName, webSiteData);
+                var webSite_lro =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, appName, webSiteData);
                 var webSite = webSite_lro.Value;
 
                 Utilities.Log("Created web app " + webSite.Data.Name);
@@ -139,10 +140,22 @@ namespace ManageWebAppCosmosDbByMsi
 
                 Utilities.Log("Deploying a local asp.net application to " + appName + " through Git...");
 
-                var profile = webSite.Data.HostingEnvironmentProfile;
+                var publishingprofile =await webSite.GetPublishingProfileXmlWithSecretsAsync(new Azure.ResourceManager.AppService.Models.CsmPublishingProfile()
+                {
+                    Format = Azure.ResourceManager.AppService.Models.PublishingProfileFormat.WebDeploy
+                });
                 //Utilities.DeployByGit(profile, "documentdb-dotnet-todo-app");
-                var extension = webSite.GetSiteExtension();
-                var deploy = await extension.CreateOrUpdateAsync(Azure.WaitUntil.Completed, new Azure.ResourceManager.AppService.Models.WebAppMSDeploy());
+                var reader = new StreamReader(publishingprofile);
+                var content = reader.ReadToEnd();
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(content);
+                XmlNodeList gitUrl = xmlDoc.GetElementsByTagName("publishUrl");
+                string gitUrlString = gitUrl[0].InnerText;
+                XmlNodeList userName = xmlDoc.GetElementsByTagName("userName");
+                string userNameString = userName[0].InnerText;
+                XmlNodeList password = xmlDoc.GetElementsByTagName("userPWD");
+                string passwordString = password[0].InnerText;
+                Utilities.DeployByGit(userNameString, passwordString, gitUrlString, "azure-samples-appservice-helloworld");
 
                 Utilities.Log("Deployment to web app " + webSite.Data.Name + " completed");
                 Utilities.Print(webSite);
