@@ -31,5 +31,21 @@
 		<PackageReference Include="Azure.ResourceManager.Storage" Version="1.2.0-beta.1" />
 		<PackageReference Include="Azure.ResourceManager.TrafficManager" Version="1.1.0" />
 	</ItemGroup>
+	<ItemGroup>
+		<Compile Remove="Asset\documentdb-dotnet-todo-app\src\App_Start\BundleConfig.cs" />
+		<Compile Remove="Asset\documentdb-dotnet-todo-app\src\App_Start\FilterConfig.cs" />
+		<Compile Remove="Asset\documentdb-dotnet-todo-app\src\App_Start\RouteConfig.cs" />
+		<Compile Remove="Asset\documentdb-dotnet-todo-app\src\Controllers\ItemController.cs" />
+		<Compile Remove="Asset\documentdb-dotnet-todo-app\src\DocumentDBRepository.cs" />
+		<Compile Remove="Asset\documentdb-dotnet-todo-app\src\Global.asax.cs" />
+		<Compile Remove="Asset\documentdb-dotnet-todo-app\src\Models\Context.cs" />
+		<Compile Remove="Asset\documentdb-dotnet-todo-app\src\Models\Item.cs" />
+		<Compile Remove="Asset\documentdb-dotnet-todo-app\src\Properties\AssemblyInfo.cs" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="Asset\azure-samples-appservice-helloworld\.gitignore">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
 </Project>

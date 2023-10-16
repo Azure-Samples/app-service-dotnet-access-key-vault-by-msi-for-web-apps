@@ -144,7 +144,6 @@ namespace ManageWebAppCosmosDbByMsi
                 {
                     Format = Azure.ResourceManager.AppService.Models.PublishingProfileFormat.WebDeploy
                 });
-                //Utilities.DeployByGit(profile, "documentdb-dotnet-todo-app");
                 var reader = new StreamReader(publishingprofile);
                 var content = reader.ReadToEnd();
                 XmlDocument xmlDoc = new XmlDocument();
@@ -155,6 +154,7 @@ namespace ManageWebAppCosmosDbByMsi
                 string userNameString = userName[0].InnerText;
                 XmlNodeList password = xmlDoc.GetElementsByTagName("userPWD");
                 string passwordString = password[0].InnerText;
+                Utilities.DeployByGit(userNameString, passwordString, gitUrlString, "documentdb-dotnet-todo-app");
                 Utilities.DeployByGit(userNameString, passwordString, gitUrlString, "azure-samples-appservice-helloworld");
 
                 Utilities.Log("Deployment to web app " + webSite.Data.Name + " completed");
